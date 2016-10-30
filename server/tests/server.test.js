@@ -4,10 +4,18 @@ const request = require('supertest');
 const { app } = require('../server');
 const { Todo } = require('../models/todo');
 
+const todos = [{
+  text: 'First test todo'
+}, {
+  text: 'Second test todo'
+}];
+
 // lifecycle method
 beforeEach((done) => {
   // wipes out all of the todos, so we start with 0 todos
-  Todo.remove({}).then(() => done());
+  Todo.remove({}).then(() => {
+    return Todo.insertMany(todos); // return allows us to chain callbacks
+  }).then(() => done());
 });
 
 describe('POST /todos', () => {
@@ -26,7 +34,7 @@ describe('POST /todos', () => {
           return done(err); // wraps up the test and prints err, stops anything below to run b/c return
         }
 
-        Todo.find().then((todos) => {
+        Todo.find({ text }).then((todos) => {
           expect(todos.length).toBe(1);
           expect(todos[0].text).toBe(text);
           done();
@@ -47,9 +55,21 @@ describe('POST /todos', () => {
         }
 
         Todo.find().then((todos) => {
-          expect(todos.length).toBe(0);
+          expect(todos.length).toBe(2);
           done();
         }).catch((err) => done(err));
       });
+  });
+});
+
+describe('GET /todos', () => {
+  it('should get all todos', (done) => {
+    request(app)
+      .get('/todos')
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.todos.length).toBe(2);
+      })
+      .end(done) // nothing is asynchronous
   });
 });
