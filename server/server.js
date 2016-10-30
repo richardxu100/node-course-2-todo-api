@@ -22,6 +22,13 @@ app.post('/todos', (req, res) => {
 });
 
 // GET /todos/123kasdf
+app.get('/todos', (req, res) => {
+  Todo.find().then((todos) => {
+    res.send({ todos }) // sending objects allows us to be more flexible in the future, arrays not that flexible
+  }, (err) => {
+    res.status(400).send(err);
+  });
+});
 
 app.listen(3000, () => {
   console.log('Started on port 3000');
