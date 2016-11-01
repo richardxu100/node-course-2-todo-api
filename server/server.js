@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
@@ -66,6 +67,36 @@ app.delete('/todos/:id', (req, res) => {
     res.status(400).send();
   });
 });
+
+app.patch('/todos/:id', (req, res) => {
+  var id = req.params.id;
+  // user can only update a few propertieswu
+  var body = _.pick(req.body, ['text', 'completed']); // only two properties a user can update
+
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  } else {
+    body.completed = false;
+    body.completedAt = null; // remove the value from the database
+  }
+
+  // new is like the returnOriginal property set to false
+  Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+    if (!todo) {
+      return res.status(404).send();
+    }
+
+    res.send({ todo });
+  }).catch((err) => {
+    res.status(400).send();
+  })
+});
+
+
 
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
