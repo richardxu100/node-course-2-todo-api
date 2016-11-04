@@ -91,14 +91,27 @@ app.patch('/todos/:id', (req, res) => {
     if (!todo) {
       return res.status(404).send();
     }
-
     res.send({ todo });
   }).catch((err) => {
-    res.status(400).send();
-  })
+    res.status(400).send()
+  });
 });
 
+// POST /users, use pick
+app.post('/users', (req, res) => {
+  const body = _.pick(req.body, ['email', 'password']);
+  const user = new User(body);
 
+  user.save().then(() => {
+    return user.generateAuthToken(); // because we're chaining a promise
+    // res.send({ user });
+  }).then((token) => {
+    // x- is a custom header, for specific purposes
+    res.header('x-auth', token).send(user);
+  }).catch((e) => {
+    res.status(400).send(e)
+  });
+});
 
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
