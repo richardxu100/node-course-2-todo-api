@@ -74,6 +74,29 @@ UserSchema.statics.findByToken = function(token) {
   });
 }
 
+UserSchema.statics.findByCredentials = function(email, password) {
+  var User = this;
+
+  // if this is used with a then and catch call, then need to return it to chain the promise
+  return User.findOne({email}).then((user) => {
+    if (!user) {
+      return Promise.reject();
+    }
+
+    // bcrypt only uses callbacks, but we'll use promises
+    return new Promise((resolve, reject) => {
+      // use bcrypt.compare to compare password and user.password
+      bcrypt.compare(password, user.password, (err, res) => {
+        if (res === true) {
+          return resolve(user);
+        }
+        reject();
+      });
+    });
+
+  });
+}
+
 // need to use function as the callback, b/c of how arrow function binds this
 UserSchema.pre('save', function(next) {
   var user = this;
