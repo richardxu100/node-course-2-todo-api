@@ -60,7 +60,7 @@ UserSchema.methods.removeToken = function(token) {
     $pull: {
       tokens: { token }
     }
-  })
+  });
 }
 
 // these turn into model methods, model is the this variable
