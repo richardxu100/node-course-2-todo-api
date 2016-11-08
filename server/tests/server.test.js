@@ -360,10 +360,6 @@ describe('POST /users/login', () => {
 
 describe('DELETE /users/me/token', () => {
   it('should remove auth token on logout', (done) => {
-    // DELETE /users/me/token
-    // set x-auth equal to token
-    // 200
-    // Find user, verify that tokens array has length of zero
     request(app)
       .delete('/users/me/token')
       .set('x-auth', users[0].tokens[0].token)
