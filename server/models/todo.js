@@ -14,6 +14,10 @@ var Todo = mongoose.model('Todo', {
   completedAt: { // mongoDB already has createdAt timestamp thing
     type: Number,
     default: null
+  },
+  _creator: { // underscore notifies an id
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
   }
 });
 
