@@ -15,73 +15,69 @@ const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-app.post('/todos', authenticate, (req, res) => {
-  const todo = new Todo({
-    text: req.body.text,
-    _creator: req.user._id
-  });
-
-  todo.save().then((doc) => {
+app.post('/todos', authenticate, async (req, res) => {
+  try {
+    const todo = new Todo({
+      text: req.body.text,
+      _creator: req.user._id
+    });
+    const doc = await todo.save();
     res.send(doc);
-  }, (err) => {
-    res.status(400).send(err);
-  });
+  } catch(e) {
+    res.status(400).send(e);
+  }
 });
 
 // GET /todos/123kasdf
-app.get('/todos', authenticate, (req, res) => {
-  Todo.find({
-    _creator: req.user._id // only return todos that the logged in user created
-  }).then((todos) => {
-    res.send({ todos }) // sending objects allows us to be more flexible in the future, arrays not that flexible
-  }, (err) => {
-    res.status(400).send(err);
-  });
+app.get('/todos', authenticate, async (req, res) => {
+  try {
+    const todos = await Todo.find({_creator: req.user._id });
+    res.send({ todos }); // sending objects allows us to be more flexible in the future, arrays not that flexible
+  } catch(e) {
+    res.status(400).send(e);
+  }
 });
 
 // GET /todos/1234324
-app.get('/todos/:id', authenticate, (req, res) => {
+app.get('/todos/:id', authenticate, async (req, res) => {
   var id = req.params.id;
 
   if (!ObjectID.isValid(id)) {
     return res.status(404).send();
   }
-
-  Todo.findOne({
-    _id: id,
-    _creator: req.user._id // the creator is the person currently logged in
-  }).then((todo) => {
+  
+  try {
+    const todo = await Todo.findOne({
+      _id: id,
+      _creator: req.user._id // the creator is the person currently logged in
+    });
     if (!todo) {
       return res.status(404).send();
     }
-    res.send({ todo }); // more flexibility as an object
-  }).catch((err) => {
+    res.send({ todo }); // more flexibility as an object  
+  } catch(e) {
     res.status(400).send();
-  });
+  }
 });
 
-app.delete('/todos/:id', authenticate, (req, res) => {
-  var id = req.params.id;
-
+app.delete('/todos/:id', authenticate, async (req, res) => {
+  const id = req.params.id;
   if (!ObjectID.isValid(id)) {
     return res.status(404).send();
   }
-
-  Todo.findOneAndRemove({
-    _id: id,
-    _creator: req.user._id
-  }).then((todo) => {
+  try {  
+    const todo = await Todo.findOneAndRemove({ _id: id, _creator: req.user._id });
     if (!todo) {
       return res.status(404).send();
     }
     res.send({todo});
-  }).catch((err) => {
+  } catch(e) {
     res.status(400).send();
-  });
+  }
 });
 
 // 500 error, make sure u put in the authenticate middleware
-app.patch('/todos/:id', authenticate, (req, res) => {
+app.patch('/todos/:id', authenticate, async (req, res) => {
   var id = req.params.id;
   // user can only update a few properties
   var body = _.pick(req.body, ['text', 'completed']); // only two properties a user can update
@@ -99,57 +95,56 @@ app.patch('/todos/:id', authenticate, (req, res) => {
 
   // new is like the returnOriginal property set to false
   // findOneAndUpdate
-  Todo.findOneAndUpdate({
-    _id: id,
-    _creator: req.user._id
-  }, {$set: body}, {new: true}).then((todo) => {
+  try {
+    const todo = await Todo.findOneAndUpdate({
+      _id: id,
+      _creator: req.user._id
+    }, {$set: body}, {new: true});
+
     if (!todo) {
       return res.status(404).send();
     }
     res.send({ todo });
-  }).catch((err) => {
+  } catch(e) {
     res.status(400).send()
-  });
+  }
 });
 
 // POST /users, use pick
-app.post('/users', (req, res) => {
-  const body = _.pick(req.body, ['email', 'password']);
-  const user = new User(body);
-
-  user.save().then(() => {
-    return user.generateAuthToken(); // because we're chaining a promise
-    // res.send({ user });
-  }).then((token) => {
-    // x- is a custom header, for specific purposes
+app.post('/users', async (req, res) => {
+  try {
+    const body = _.pick(req.body, ['email', 'password']);
+    const user = new User(body);
+    await user.save();
+    const token = user.generateAuthToken();
     res.header('x-auth', token).send(user);
-  }).catch((e) => {
+  } catch(e) {
     res.status(400).send(e);
-  });
+  }
 });
 
 app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user)
 });
 
-app.post('/users/login', (req, res) => {
-  const body = _.pick(req.body, ['email', 'password']);
-
-  User.findByCredentials(body.email, body.password).then((user) => {
-    return user.generateAuthToken().then((token) => {
-      res.header('x-auth', token).send(user);
-    });
-  }).catch((err) => {
+app.post('/users/login', async (req, res) => {
+  try {
+    const body = _.pick(req.body, ['email', 'password']);
+    const user = await User.findByCredentials(body.email, body.password);
+    const token = await user.generateAuthToken();
+    res.header('x-auth', token).send(user);
+  } catch(e) {
     res.status(400).send();
-  })
+  }
 });
 
-app.delete('/users/me/token', authenticate, (req, res) => {
-  req.user.removeToken(req.token).then(() => {
+app.delete('/users/me/token', authenticate, async (req, res) => {
+  try {
+    await req.user.removeToken(req.token);
     res.status(200).send();
-  }).catch(() => {
+  } catch(e) {
     res.status(400).send()
-  });
+  }
 });
 
 app.listen(port, () => {
