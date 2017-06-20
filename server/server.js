@@ -106,7 +106,7 @@ app.patch('/todos/:id', authenticate, async (req, res) => {
     }
     res.send({ todo });
   } catch(e) {
-    res.status(400).send()
+    res.status(400).send(e);
   }
 });
 
